@@ -9,15 +9,4 @@ interface SuccessfulVerification<T> {
     payload: T;
 }
 
-// interface SuccessfulVerificationNoRefresh<T> extends SuccessfulVerificationBase<T> {
-//     isRefreshNeeded: false;
-// }
-
-// interface SuccessfulVerificationRefresh<T> extends SuccessfulVerificationBase<T> {
-//     isRefreshNeeded: true;
-//     token: string;
-// }
-
-// export type SuccessfulVerification<T> = SuccessfulVerificationNoRefresh<T> | SuccessfulVerificationRefresh<T>;
-
 export type VerificationResult<T> = FailedVerification<T> | SuccessfulVerification<T>;
