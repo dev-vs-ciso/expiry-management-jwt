@@ -10,7 +10,7 @@ router.get('/hello', (req, res) => {
   res.json({ message: 'Hello from the API!' });
 });
 
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   if (!req.cookies.jwt) {
     console.error('No user cookie found');
     return res.status(401).json({ error: 'Unauthorized' });
@@ -18,23 +18,39 @@ router.get('/me', (req, res) => {
   console.log(`Found user cookie (it should be a JWT): ${req.cookies.jwt}`);
   const verification = verifyJwt<User>(req.cookies.jwt);
   if (verification.status === 'failed') {
+    if (verification.reason === 'expired') {
+      // we need to refresh the token
+      console.log('Token expired, refreshing the token'); 
+      const refreshedToken = await generateJwt(verification.payload);
+      res.header('Set-Cookie', `jwt=${refreshedToken}; HttpOnly`);
+      const check = verifyJwt<User>(refreshedToken);
+      return res.send(check.payload);
+    }
+
     return res.status(403).json({ error: 'Verification failed' });
   }
 
   res.send(verification.payload);
 });
 
-router.get('/secret', (req, res) => {
+router.get('/secret', async (req, res) => {
   if (!req.cookies.jwt) {
     console.error('No user cookie found');
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const verification = verifyJwt<User>(req.cookies.jwt);
   if (verification.status === 'failed') {
-    return res.status(403).json({ error: 'Verification failed' });
+    if (verification.reason === 'expired') {
+      // we need to refresh the token
+      console.log('Token expired, refreshing the token'); 
+      const refreshedToken = await generateJwt(verification.payload);
+      res.header('Set-Cookie', `jwt=${refreshedToken}; HttpOnly`);
+    } else {
+      return res.status(403).json({ error: 'Verification failed' });
+    }
   }
 
-  const userData = users.find((user) => user.id === verification.payload.id);
+  const userData = users.find((user) => user.id === verification.payload?.id);
 
   res.send( { secret: userData?.secret });
 });
